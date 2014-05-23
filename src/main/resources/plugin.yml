@@ -1,0 +1,13 @@
+
+name: "DyeSmear"
+main: com.lb_stuff.dyesmear.DyeSmear
+version: 1.0
+author: "Nicholas \"LB\" Braden"
+description: ""
+
+commands:
+  smear:
+    description: "Interact with the DyeSmear plugin"
+    usage: "To cancel smear: /smear cancel"
+    permission: DyeSmear.smear
+    permission-message: "You don't have the DyeSmear.smear permisson..."
