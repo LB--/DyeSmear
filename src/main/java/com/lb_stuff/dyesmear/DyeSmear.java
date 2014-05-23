@@ -132,7 +132,7 @@ public class DyeSmear extends JavaPlugin implements Listener
 			if(color.getValue() >= 8)
 			{
 				ItemStack result = new ItemStack(Material.INK_SACK, color.getValue()/8, color.getKey().getDyeData());
-				p.getWorld().dropItem(p.getLocation(), result);
+				p.getWorld().dropItem(p.getLocation(), result).setPickupDelay(0);
 			}
 		}
 	}
@@ -179,22 +179,36 @@ public class DyeSmear extends JavaPlugin implements Listener
 			boolean isScraper = item.getType().equals(Material.DIAMOND);
 			if(isSmearer || isScraper)
 			{
-				if(e.getAction().equals(Action.LEFT_CLICK_BLOCK))
+				if(player.hasPermission("DyeSmear.smear"))
 				{
-					Block block = e.getClickedBlock();
-					addBlock(player, block);
-					player.sendMessage("Selected "+smears.get(player).size()+" blocks to scrape/smear");
-				}
-				else if(e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
-				{
-					validateBlocks(player);
-					scrape(player, isScraper);
-					if(isSmearer)
+					if(e.getAction().equals(Action.LEFT_CLICK_BLOCK))
 					{
-						smear(player, item);
-						player.setItemInHand(item);
+						Block block = e.getClickedBlock();
+						addBlock(player, block);
+						player.sendMessage("Selected "+smears.get(player).size()+" blocks to scrape/smear");
 					}
-					player.sendMessage("Finished scraping/smearing");
+					else if(e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
+					{
+						validateBlocks(player);
+						scrape(player, isScraper);
+						if(isSmearer)
+						{
+							smear(player, item);
+							player.setItemInHand(item);
+						}
+						if(smears.get(player).size() == 0)
+						{
+							player.sendMessage("Finished scraping/smearing");
+						}
+						else
+						{
+							player.sendMessage("Ran out of supplies - "+smears.get(player).size()+" blocks not smeared");
+						}
+					}
+				}
+				else
+				{
+					player.sendMessage("You don't have permission to use DyeSmear (DyeSmear.smear)");
 				}
 			}
 		}

@@ -27,6 +27,7 @@ public class SmearCommand implements CommandExecutor
 					if(args[0].equalsIgnoreCase("cancel"))
 					{
 						inst.cancelSmear(p);
+						p.sendMessage("Smear selection cleared");
 						return true;
 					}
 				}
