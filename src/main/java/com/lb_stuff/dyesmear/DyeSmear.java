@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.DyeColor;
 import org.bukkit.material.MaterialData;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 
 import java.util.*;
 import java.io.*;
@@ -97,19 +98,28 @@ public class DyeSmear extends JavaPlugin implements Listener
 		Set<Block> blocks = smears.get(p);
 		for(Iterator<Block> it = blocks.iterator(); it.hasNext(); )
 		{
-			if(!canInteract(it.next().getType()))
+			Block b = it.next();
+			if(!canInteract(b.getType()))
 			{
 				it.remove();
+			}
+			else
+			{
+				BlockBreakEvent bbe = new BlockBreakEvent(b, p);
+				getServer().getPluginManager().callEvent(bbe);
+				if(bbe.isCancelled())
+				{
+					it.remove();
+				}
 			}
 		}
 		return blocks;
 	}
 	private void addBlock(Player p, Block b)
 	{
-		if(canInteract(b.getType()))
-		{
-			validateBlocks(p).add(b);
-		}
+		if(!smears.containsKey(p)) smears.put(p, new HashSet<Block>());
+		smears.get(p).add(b);
+		validateBlocks(p);
 	}
 	private void scrape(Player p, boolean remove)
 	{
