@@ -83,6 +83,25 @@ public class DyeSmear extends JavaPlugin implements Listener
 		}
 		return m;
 	}
+	private double dyeCost(Material m)
+	{
+		switch(m)
+		{
+			case GLASS:
+				return 1.0/8.0;
+			case STAINED_GLASS:
+				return 1.0/8.0;
+			case THIN_GLASS:
+				return 3.0/64.0;
+			case STAINED_GLASS_PANE:
+				return 3.0/64.0;
+			case HARD_CLAY:
+				return 1.0/8.0;
+			case STAINED_CLAY:
+				return 1.0/8.0;
+		}
+		return 0.0;
+	}
 
 	private Map<Player, Set<Block>> smears = new HashMap<>();
 	public void cancelSmear(Player p)
@@ -123,26 +142,27 @@ public class DyeSmear extends JavaPlugin implements Listener
 	}
 	private void scrape(Player p, boolean remove)
 	{
-		Map<DyeColor, Integer> colors = new HashMap<>();
+		Map<DyeColor, Double> colors = new HashMap<>();
 		Set<Block> blocks = smears.get(p);
 		for(Iterator<Block> it = blocks.iterator(); it.hasNext(); )
 		{
 			Block b = it.next();
 			DyeColor c = DyeColor.getByWoolData(b.getData());
-			if(!colors.containsKey(c)) colors.put(c, 0);
+			if(!colors.containsKey(c)) colors.put(c, 0.0);
 			if(!downgrade(b.getType()).equals(b.getType()))
 			{
-				colors.put(c, colors.get(c)+1);
+				colors.put(c, colors.get(c)+dyeCost(b.getType()));
 				b.setType(downgrade(b.getType()));
 			}
 			if(remove) it.remove();
 		}
-		for(Map.Entry<DyeColor, Integer> color : colors.entrySet())
+		for(Map.Entry<DyeColor, Double> color : colors.entrySet())
 		{
-			if(color.getValue() >= 8)
+			while(color.getValue() >= 1.0)
 			{
-				ItemStack result = new ItemStack(Material.INK_SACK, color.getValue()/8, color.getKey().getDyeData());
+				ItemStack result = new ItemStack(Material.INK_SACK, 1, color.getKey().getDyeData());
 				p.getWorld().dropItem(p.getLocation(), result).setPickupDelay(0);
+				color.setValue(color.getValue()-1.0);
 			}
 		}
 	}
@@ -150,24 +170,24 @@ public class DyeSmear extends JavaPlugin implements Listener
 	{
 		DyeColor c = DyeColor.getByDyeData(item.getData().getData());
 		int amount = item.getAmount();
-		int dyes = 0;
+		double dyes = 0.0;
 		Set<Block> blocks = smears.get(p);
 		for(Iterator<Block> it = blocks.iterator(); it.hasNext(); )
 		{
 			Block b = it.next();
-			if(dyes <= 0)
+			if(dyes <= 0.0)
 			{
 				if(--amount < 0)
 				{
 					break;
 				}
-				dyes += 8;
+				dyes += 1.0;
 			}
 			if(!upgrade(b.getType()).equals(b.getType()))
 			{
 				b.setType(upgrade(b.getType()));
 				b.setData(c.getWoolData());
-				--dyes;
+				dyes -= dyeCost(b.getType());
 			}
 			it.remove();
 		}
@@ -185,6 +205,11 @@ public class DyeSmear extends JavaPlugin implements Listener
 		if(e.hasItem() && e.hasBlock())
 		{
 			ItemStack item = e.getItem();
+			Block block = e.getClickedBlock();
+			if(!canInteract(block.getType()))
+			{
+				return;
+			}
 			boolean isSmearer = item.getType().equals(Material.INK_SACK);
 			boolean isScraper = item.getType().equals(Material.DIAMOND);
 			if(isSmearer || isScraper)
@@ -193,9 +218,13 @@ public class DyeSmear extends JavaPlugin implements Listener
 				{
 					if(e.getAction().equals(Action.LEFT_CLICK_BLOCK))
 					{
-						Block block = e.getClickedBlock();
 						addBlock(player, block);
-						player.sendMessage("Selected "+smears.get(player).size()+" blocks to scrape/smear");
+						double cost = 0.0;
+						for(Block b : smears.get(player))
+						{
+							cost += dyeCost(b.getType());
+						}
+						player.sendMessage("Selected "+smears.get(player).size()+" blocks to scrape/smear ("+cost+" dye)");
 					}
 					else if(e.getAction().equals(Action.RIGHT_CLICK_BLOCK))
 					{
